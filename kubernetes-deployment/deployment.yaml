@@ -1,0 +1,1378 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Bank of Splunk - Complete Deployment Manifest
+# This file contains all resources needed to deploy the Bank of Splunk application
+
+---
+# ConfigMaps
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: environment-config
+data:
+  LOCAL_ROUTING_NUM: "883745000"
+  PUB_KEY_PATH: "/tmp/.ssh/publickey"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service-api-config
+data:
+  TRANSACTIONS_API_ADDR: "ledgerwriter:8080"
+  BALANCES_API_ADDR: "balancereader:8080"
+  HISTORY_API_ADDR: "transactionhistory:8080"
+  CONTACTS_API_ADDR: "contacts:8080"
+  USERSERVICE_API_ADDR: "userservice:8080"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-data-config
+data:
+  USE_DEMO_DATA: "True"
+  DEMO_LOGIN_USERNAME: "testuser"
+  # All demo user accounts are hardcoded to use the login password 'bankofanthos'
+  DEMO_LOGIN_PASSWORD: "bankofsplunk"
+---
+apiVersion: v1
+data:
+  ACCOUNTS_DB_URI: postgresql://accounts-admin:accounts-pwd@accounts-db:5432/accounts-db
+  POSTGRES_DB: accounts-db
+  POSTGRES_PASSWORD: accounts-pwd
+  POSTGRES_USER: accounts-admin
+kind: ConfigMap
+metadata:
+  labels:
+    app: accounts-db
+    application: bank-of-splunk
+    environment: development
+    team: accounts
+    tier: db
+  name: accounts-db-config
+---
+apiVersion: v1
+data:
+  POSTGRES_DB: postgresdb
+  POSTGRES_PASSWORD: password
+  POSTGRES_USER: admin
+  SPRING_DATASOURCE_PASSWORD: password
+  SPRING_DATASOURCE_URL: jdbc:postgresql://ledger-db:5432/postgresdb
+  SPRING_DATASOURCE_USERNAME: admin
+kind: ConfigMap
+metadata:
+  labels:
+    app: ledger-db
+    application: bank-of-splunk
+    environment: development
+    team: ledger
+    tier: db
+  name: ledger-db-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scriptfile
+data:
+  local-file: |
+    const { Console } = require('console');
+    const puppeteer = require('puppeteer');
+    function run () {
+        return new Promise(async (resolve, reject) => {
+            const customUserAgent = 'Mozilla/5.0 (X11; Linux x86_64; Splunk RUM_LoadGen) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36';
+            console.log('DEBUG: Using User Agent:', customUserAgent);
+
+            const browser = await puppeteer.launch({
+                headless: true,
+                defaultViewport: null,
+                args: [
+                  '--no-sandbox',
+                  '--disable-setuid-sandbox',
+                  '--disable-gpu',
+                  '--disable-dev-shm-usage',
+                  '--disable-web-security',
+                  '--disable-features=VizDisplayCompositor',
+                  '--max-old-space-size=256',
+                  '--disable-extensions',
+                  '--disable-plugins',
+                  '--disable-background-networking',
+                  '--disable-background-timer-throttling',
+                  '--disable-backgrounding-occluded-windows',
+                  '--disable-renderer-backgrounding',
+                  '--memory-pressure-off',
+                  `--user-agent=${customUserAgent}`
+                ]
+            });
+            const url = process.env.RUM_FRONTEND_IP;
+
+            try {
+                const wait_time = 500;
+                const timeout = 10000; // Timeout for waiting on actions
+                for (let loop = 0; loop < 1; loop++) {
+                    const page = await browser.newPage();
+
+                    // Interaction 1: Set Viewport
+                    console.log("Set Viewport");
+                    await page.setViewport({
+                        width: 1000,
+                        height: 600
+                    });
+
+                    // Interaction 2: Go to the page and wait for navigation
+                    console.log("Go to " + url + " and wait for navigation");
+                    const promises = [];
+                    promises.push(page.waitForNavigation());
+                    await page.goto(`${url}`);
+                    await Promise.all(promises);
+                    await delay(wait_time);
+
+                    // Interaction 3: Wait for Sign In button
+                    console.log("Waiting for 'Sign In' button");
+                    await page.waitForSelector('button', { timeout });
+
+                    // Interaction 4: Click Sign In and wait for navigation
+                    console.log("Click Sign In and wait for navigation");
+
+                    const signInPromises = [];
+                    const startSignInWaitingForEvents = () => {
+                        signInPromises.push(page.waitForNavigation({ waitUntil: 'networkidle0' }));  // Wait for navigation after clicking
+                    };
+
+                    // Wait for the "Sign In" button and click it
+                    await page.locator('button').click({
+                        offset: {
+                            x: 201.171875,
+                            y: 24.671875,
+                        },
+                    });
+
+                    // Start waiting for navigation
+                    startSignInWaitingForEvents();
+                    await Promise.all(signInPromises);  // Wait for navigation to complete
+                    await page.waitForSelector('h2', { timeout });  // Wait for the Checking Account heading after deposit
+                    await delay(wait_time);  // Adding delay after waiting for the element
+
+                    console.log("Click on Account Username");
+                    // Interaction: Click on Account Username
+                    await page.locator('#account-user-name').click({
+                         offset: {
+                             x: 79,
+                             y: 6.53125,
+                         },
+                    });
+                    await delay(wait_time); // Adding delay between actions
+
+                    console.log("Wait for Sign Out link");
+                    // Interaction: Wait for Sign Out link
+                    await page.waitForSelector('li > div a', { timeout });
+
+                    console.log("Click Sign Out and wait for navigation");
+                    // Interaction: Click Sign Out and wait for navigation
+                    const signOutPromises = [];
+                    signOutPromises.push(page.waitForNavigation({ waitUntil: 'networkidle0' }));
+
+                    await page.locator('li > div a').click({
+                        offset: {
+                            x: 71.796875,
+                            y: 22.15625,
+                        },
+                    });
+
+                    await Promise.all(signOutPromises); // Wait for navigation after clicking
+                    console.log("Sign out completed");
+
+                    // Adding a final delay before closing
+                    await browser.close();
+                }
+            } catch (e) {
+                console.log('{"severity":"error","msg": "' + e + '"}');
+            } finally {
+                await browser.close();
+            }
+            resolve('RUM Loop completed successfully'); // Return a message when resolving
+            await delay(10000);
+        });
+    }
+
+    run().then(console.log).catch(console.error);
+
+    function delay(time) {
+        return new Promise(function (resolve) {
+            setTimeout(resolve, time);
+        });
+    }
+---
+# Secrets
+apiVersion: v1
+data:
+  jwtRS256.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUJWUUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQVQ4d2dnRTdBZ0VBQWtFQXZVY2FzVjhxbzVHdmlFRTQKNExtQVJVWkxON0tUZDJtSzh5RExieHlWdWxwVDluaXE4UU9ETkxvQ09IdVJWT3E3RUpWYVRTSGYxSk9MOTRkcAp2NU45Y1FJREFRQUJBa0F5Y0JnMDI5OUk1ekdYWlluNm1IUU9BY1ZaZWtUQnRXWkprNXVpYUVPZC9LNjNzSk9CCklveFF6OWxkZGJIWUxaeVhHV2hHd0tMeUIyOE5BOXJLYVJGaEFpRUE0ZXJua2pYVDNlRHhscm5HUzNLTWJXSDgKdlVVYWhxa29mK0Z3eEkzU3gvTUNJUURXZXpmT3RYZnIzOXY0MkRMaEVEcVZZZEJUWWpJZ2ZUelR1MGR1c0hjQwpDd0lnSUpOb3ROS0NMRnBGTzhDcDhUTWhRSnlDZnlBNXhQVWJXK1U4QjN1VHl6VUNJUUN3WkFIUHBIcU5xRHQyCmVnZk9CTlRKU2ZwVXVTdFVnT3JuanR2K2NtNU5aUUloQUp4ckprNU1od0h2VzZMcVNCemVqZzZwUkt3SnFiVXcKYWlobDVKbUZLR1dxCi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K
+  jwtRS256.key.pub: LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUZ3d0RRWUpLb1pJaHZjTkFRRUJCUUFEU3dBd1NBSkJBTDFIR3JGZktxT1JyNGhCT09DNWdFVkdTemV5azNkcAppdk1neTI4Y2xicGFVL1o0cXZFRGd6UzZBamg3a1ZUcXV4Q1ZXazBoMzlTVGkvZUhhYitUZlhFQ0F3RUFBUT09Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLQo=
+kind: Secret
+metadata:
+  name: jwt-key
+type: Opaque
+---
+# ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: bank-of-anthos
+---
+# Database StatefulSets and Services
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    application: bank-of-splunk
+    environment: development
+    team: accounts
+    tier: db
+  name: accounts-db
+spec:
+  ports:
+    - name: tcp
+      port: 5432
+      protocol: TCP
+      targetPort: 5432
+  selector:
+    app: accounts-db
+    application: bank-of-splunk
+    environment: development
+    team: accounts
+    tier: db
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    application: bank-of-splunk
+    environment: development
+    team: accounts
+    tier: db
+  name: accounts-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: accounts-db
+      application: bank-of-splunk
+      environment: development
+      team: accounts
+      tier: db
+  serviceName: accounts-db
+  template:
+    metadata:
+      labels:
+        app: accounts-db
+        application: bank-of-splunk
+        environment: development
+        team: accounts
+        tier: db
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: environment-config
+            - configMapRef:
+                name: accounts-db-config
+            - configMapRef:
+                name: demo-data-config
+          image: ghcr.io/splunk/bank-of-splunk/accounts-db:v1.5.3@sha256:60acf1383d6fd8d5ba3a689268a258171c8d2d240c59cee1ae636aef3f1e8d72
+          name: accounts-db
+          ports:
+            - containerPort: 5432
+          resources:
+            limits:
+              cpu: 250m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgresdb
+              subPath: postgres
+      serviceAccount: bank-of-anthos
+      serviceAccountName: default
+      volumes:
+        - emptyDir: {}
+          name: postgresdb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    application: bank-of-splunk
+    environment: development
+    team: ledger
+    tier: db
+  name: ledger-db
+spec:
+  ports:
+    - name: tcp
+      port: 5432
+      targetPort: 5432
+  selector:
+    app: ledger-db
+    application: bank-of-splunk
+    environment: development
+    team: ledger
+    tier: db
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    application: bank-of-splunk
+    environment: development
+    team: ledger
+    tier: db
+  name: ledger-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ledger-db
+      application: bank-of-splunk
+      environment: development
+      team: ledger
+      tier: db
+  serviceName: ledger-db
+  template:
+    metadata:
+      labels:
+        app: ledger-db
+        application: bank-of-splunk
+        environment: development
+        team: ledger
+        tier: db
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: environment-config
+            - configMapRef:
+                name: ledger-db-config
+            - configMapRef:
+                name: demo-data-config
+          image: ghcr.io/splunk/bank-of-splunk/ledger-db:v1.5.3@sha256:de1ae1694d03c6c368245ec88ca016476dffa1f73a5d6cd67ab949a96c93d668
+          name: postgres
+          ports:
+            - containerPort: 5432
+          resources:
+            limits:
+              cpu: 250m
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgresdb
+              subPath: postgres
+      serviceAccount: bank-of-anthos
+      serviceAccountName: default
+      volumes:
+        - emptyDir: {}
+          name: postgresdb
+---
+# Backend Services
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    application: bank-of-splunk
+    environment: development
+    team: accounts
+    tier: backend
+  name: userservice
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: userservice
+    application: bank-of-splunk
+    environment: development
+    team: accounts
+    tier: backend
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    application: bank-of-splunk
+    environment: development
+    team: accounts
+    tier: backend
+  name: userservice
+spec:
+  selector:
+    matchLabels:
+      app: userservice
+      application: bank-of-splunk
+      environment: development
+      team: accounts
+      tier: backend
+  template:
+    metadata:
+      annotations: null
+      labels:
+        app: userservice
+        application: bank-of-splunk
+        environment: development
+        team: accounts
+        tier: backend
+    spec:
+      containers:
+        - env:
+            - name: VERSION
+              value: v1.5.3
+            - name: PORT
+              value: "8080"
+            - name: ENABLE_TRACING
+              value: "false"
+            - name: TOKEN_EXPIRY_SECONDS
+              value: "3600"
+            - name: PRIV_KEY_PATH
+              value: /tmp/.ssh/privatekey
+            - name: LOG_LEVEL
+              value: info
+            - name: SPLUNK_OTEL_AGENT
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(SPLUNK_OTEL_AGENT):4317
+            - name: OTEL_SERVICE_NAME
+              value: userservice
+          envFrom:
+            - configMapRef:
+                name: environment-config
+            - configMapRef:
+                name: accounts-db-config
+          image: ghcr.io/splunk/bank-of-splunk/userservice:v1.5.3@sha256:d6d17105ec1248ebf4af6fb5021aa047ed26fcc6ae4d89c7cd018387a7e27baf
+          name: userservice
+          ports:
+            - containerPort: 8080
+              name: http-server
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 10
+          resources:
+            limits:
+              cpu: 800m
+              ephemeral-storage: 0.25Gi
+              memory: 256Mi
+            requests:
+              cpu: 260m
+              ephemeral-storage: 0.25Gi
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - all
+            privileged: false
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /tmp/.ssh
+              name: keys
+              readOnly: true
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      serviceAccountName: bank-of-anthos
+      terminationGracePeriodSeconds: 5
+      volumes:
+        - emptyDir: {}
+          name: tmp
+        - name: keys
+          secret:
+            items:
+              - key: jwtRS256.key
+                path: privatekey
+              - key: jwtRS256.key.pub
+                path: publickey
+            secretName: jwt-key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    application: bank-of-splunk
+    environment: development
+    team: accounts
+    tier: backend
+  name: contacts
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: contacts
+    application: bank-of-splunk
+    environment: development
+    team: accounts
+    tier: backend
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    application: bank-of-splunk
+    environment: development
+    team: accounts
+    tier: backend
+  name: contacts
+spec:
+  selector:
+    matchLabels:
+      app: contacts
+      application: bank-of-splunk
+      environment: development
+      team: accounts
+      tier: backend
+  template:
+    metadata:
+      annotations: null
+      labels:
+        app: contacts
+        application: bank-of-splunk
+        environment: development
+        team: accounts
+        tier: backend
+    spec:
+      containers:
+        - env:
+            - name: VERSION
+              value: v1.5.3
+            - name: PORT
+              value: "8080"
+            - name: ENABLE_TRACING
+              value: "false"
+            - name: LOG_LEVEL
+              value: info
+            - name: SPLUNK_OTEL_AGENT
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(SPLUNK_OTEL_AGENT):4317
+            - name: OTEL_SERVICE_NAME
+              value: contacts
+          envFrom:
+            - configMapRef:
+                name: environment-config
+            - configMapRef:
+                name: accounts-db-config
+          image: ghcr.io/splunk/bank-of-splunk/contacts:v1.5.3@sha256:bfe6d8970e967130c972779b47bef1999afc3d698cc80c56cade5a52dcc0aa64
+          name: contacts
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 10
+          resources:
+            limits:
+              cpu: 250m
+              ephemeral-storage: 0.25Gi
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              ephemeral-storage: 0.25Gi
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - all
+            privileged: false
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /tmp/.ssh
+              name: publickey
+              readOnly: true
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      serviceAccountName: bank-of-anthos
+      terminationGracePeriodSeconds: 5
+      volumes:
+        - emptyDir: {}
+          name: tmp
+        - name: publickey
+          secret:
+            items:
+              - key: jwtRS256.key.pub
+                path: publickey
+            secretName: jwt-key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    instrumentation.opentelemetry.io/inject-java: "true"
+  labels:
+    application: bank-of-splunk
+    environment: development
+    team: ledger
+    tier: backend
+  name: balancereader
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: balancereader
+    application: bank-of-splunk
+    environment: development
+    team: ledger
+    tier: backend
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    instrumentation.opentelemetry.io/inject-java: "true"
+  labels:
+    application: bank-of-splunk
+    environment: development
+    team: ledger
+    tier: backend
+  name: balancereader
+spec:
+  selector:
+    matchLabels:
+      app: balancereader
+      application: bank-of-splunk
+      environment: development
+      team: ledger
+      tier: backend
+  template:
+    metadata:
+      annotations:
+        instrumentation.opentelemetry.io/inject-java: "true"
+      labels:
+        app: balancereader
+        application: bank-of-splunk
+        environment: development
+        team: ledger
+        tier: backend
+    spec:
+      containers:
+        - env:
+            - name: VERSION
+              value: v1.5.3
+            - name: PORT
+              value: "8080"
+            - name: ENABLE_TRACING
+              value: "false"
+            - name: ENABLE_METRICS
+              value: "false"
+            - name: POLL_MS
+              value: "100"
+            - name: CACHE_SIZE
+              value: "1000000"
+            - name: JVM_OPTS
+              value: "-Xms256m -Xmx512m"
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:-UseContainerSupport"
+            - name: LOG_LEVEL
+              value: info
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          envFrom:
+            - configMapRef:
+                name: environment-config
+            - configMapRef:
+                name: ledger-db-config
+          image: ghcr.io/splunk/bank-of-splunk/balancereader:v1.5.3@sha256:928b892a9bbe3db70e68542a7e8b72796a35870c07f4e87b287c29576ddbba30
+          livenessProbe:
+            httpGet:
+              path: /healthy
+              port: 8080
+            initialDelaySeconds: 120
+            periodSeconds: 5
+            timeoutSeconds: 10
+          name: balancereader
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            timeoutSeconds: 10
+          resources:
+            limits:
+              cpu: 500m
+              ephemeral-storage: 0.5Gi
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              ephemeral-storage: 0.5Gi
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - all
+            privileged: false
+            readOnlyRootFilesystem: true
+          startupProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /healthy
+              port: 8080
+            periodSeconds: 10
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /tmp/.ssh
+              name: publickey
+              readOnly: true
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      serviceAccountName: bank-of-anthos
+      terminationGracePeriodSeconds: 5
+      volumes:
+        - emptyDir: {}
+          name: tmp
+        - name: publickey
+          secret:
+            items:
+              - key: jwtRS256.key.pub
+                path: publickey
+            secretName: jwt-key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    instrumentation.opentelemetry.io/inject-java: "true"
+  labels:
+    application: bank-of-splunk
+    environment: development
+    team: ledger
+    tier: backend
+  name: ledgerwriter
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: ledgerwriter
+    application: bank-of-splunk
+    environment: development
+    team: ledger
+    tier: backend
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    instrumentation.opentelemetry.io/inject-java: "true"
+  labels:
+    application: bank-of-splunk
+    environment: development
+    team: ledger
+    tier: backend
+  name: ledgerwriter
+spec:
+  selector:
+    matchLabels:
+      app: ledgerwriter
+      application: bank-of-splunk
+      environment: development
+      team: ledger
+      tier: backend
+  template:
+    metadata:
+      annotations:
+        instrumentation.opentelemetry.io/inject-java: "true"
+      labels:
+        app: ledgerwriter
+        application: bank-of-splunk
+        environment: development
+        team: ledger
+        tier: backend
+    spec:
+      containers:
+        - env:
+            - name: VERSION
+              value: v1.5.3
+            - name: PORT
+              value: "8080"
+            - name: ENABLE_TRACING
+              value: "false"
+            - name: ENABLE_METRICS
+              value: "false"
+            - name: JVM_OPTS
+              value: "-Xms256m -Xmx512m"
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:-UseContainerSupport"
+            - name: LOG_LEVEL
+              value: info
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          envFrom:
+            - configMapRef:
+                name: environment-config
+            - configMapRef:
+                name: service-api-config
+            - configMapRef:
+                name: ledger-db-config
+          image: ghcr.io/splunk/bank-of-splunk/ledgerwriter:v1.5.3@sha256:a257d61f349d13e26d1f2e556d5ff83792d388f97f7402854ce426eceac18e4c
+          name: ledgerwriter
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            timeoutSeconds: 10
+          resources:
+            limits:
+              cpu: 500m
+              ephemeral-storage: 0.5Gi
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              ephemeral-storage: 0.5Gi
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - all
+            privileged: false
+            readOnlyRootFilesystem: true
+          startupProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /ready
+              port: 8080
+            periodSeconds: 10
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /tmp/.ssh
+              name: publickey
+              readOnly: true
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      serviceAccountName: bank-of-anthos
+      terminationGracePeriodSeconds: 5
+      volumes:
+        - emptyDir: {}
+          name: tmp
+        - name: publickey
+          secret:
+            items:
+              - key: jwtRS256.key.pub
+                path: publickey
+            secretName: jwt-key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    instrumentation.opentelemetry.io/inject-java: "true"
+  labels:
+    application: bank-of-splunk
+    environment: development
+    team: ledger
+    tier: backend
+  name: transactionhistory
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: transactionhistory
+    application: bank-of-splunk
+    environment: development
+    team: ledger
+    tier: backend
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    instrumentation.opentelemetry.io/inject-java: "true"
+  labels:
+    application: bank-of-splunk
+    environment: development
+    team: ledger
+    tier: backend
+  name: transactionhistory
+spec:
+  selector:
+    matchLabels:
+      app: transactionhistory
+      application: bank-of-splunk
+      environment: development
+      team: ledger
+      tier: backend
+  template:
+    metadata:
+      annotations:
+        instrumentation.opentelemetry.io/inject-java: "true"
+      labels:
+        app: transactionhistory
+        application: bank-of-splunk
+        environment: development
+        team: ledger
+        tier: backend
+    spec:
+      containers:
+        - env:
+            - name: VERSION
+              value: v1.5.3
+            - name: PORT
+              value: "8080"
+            - name: ENABLE_TRACING
+              value: "false"
+            - name: ENABLE_METRICS
+              value: "false"
+            - name: POLL_MS
+              value: "100"
+            - name: CACHE_SIZE
+              value: "1000"
+            - name: CACHE_MINUTES
+              value: "60"
+            - name: HISTORY_LIMIT
+              value: "100"
+            - name: JVM_OPTS
+              value: "-Xms256m -Xmx512m"
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:-UseContainerSupport"
+            - name: LOG_LEVEL
+              value: info
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          envFrom:
+            - configMapRef:
+                name: environment-config
+            - configMapRef:
+                name: ledger-db-config
+          image: ghcr.io/splunk/bank-of-splunk/transactionhistory:v1.5.3@sha256:d0fbbb9fe6f3589c0372301ad159975af5cb309891f135444cca49092e66aaa6
+          livenessProbe:
+            httpGet:
+              path: /healthy
+              port: 8080
+            initialDelaySeconds: 120
+            periodSeconds: 5
+            timeoutSeconds: 10
+          name: transactionhistory
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            timeoutSeconds: 10
+          resources:
+            limits:
+              cpu: 500m
+              ephemeral-storage: 0.5Gi
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              ephemeral-storage: 0.5Gi
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - all
+            privileged: false
+            readOnlyRootFilesystem: true
+          startupProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /healthy
+              port: 8080
+            periodSeconds: 10
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /tmp/.ssh
+              name: publickey
+              readOnly: true
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      serviceAccountName: bank-of-anthos
+      terminationGracePeriodSeconds: 5
+      volumes:
+        - emptyDir: {}
+          name: tmp
+        - name: publickey
+          secret:
+            items:
+              - key: jwtRS256.key.pub
+                path: publickey
+            secretName: jwt-key
+---
+# Frontend
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    application: bank-of-splunk
+    environment: development
+    team: frontend
+    tier: web
+  name: frontend
+spec:
+  ports:
+    - name: http
+      port: 8083
+      targetPort: 8080
+  selector:
+    app: frontend
+    application: bank-of-splunk
+    environment: development
+    team: frontend
+    tier: web
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    application: bank-of-splunk
+    environment: development
+    team: frontend
+    tier: web
+  name: frontend
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+      application: bank-of-splunk
+      environment: development
+      team: frontend
+      tier: web
+  template:
+    metadata:
+      annotations: null
+      labels:
+        app: frontend
+        application: bank-of-splunk
+        environment: development
+        team: frontend
+        tier: web
+    spec:
+      containers:
+        - env:
+            - name: VERSION
+              value: v1.5.3
+            - name: PORT
+              value: "8080"
+            - name: ENABLE_TRACING
+              value: "false"
+            - name: SCHEME
+              value: http
+            - name: LOG_LEVEL
+              value: info
+            - name: BANK_NAME
+              value: Bank of Splunk
+            - name: ENV_PLATFORM
+              value: a-variant
+            - name: SPLUNK_VERSION
+              value: "1.90"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: version=1.90
+            - name: INSTANCE
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: CLUSTER_NAME
+              value: $(INSTANCE)-k3s-cluster
+            - name: RUM_REALM
+              valueFrom:
+                secretKeyRef:
+                  key: realm
+                  name: workshop-secret
+            - name: RUM_AUTH
+              valueFrom:
+                secretKeyRef:
+                  key: rum_token
+                  name: workshop-secret
+            - name: RUM_APP_NAME
+              valueFrom:
+                secretKeyRef:
+                  key: app
+                  name: workshop-secret
+            - name: RUM_ENVIRONMENT
+              valueFrom:
+                secretKeyRef:
+                  key: env
+                  name: workshop-secret
+            - name: SPLUNK_OTEL_AGENT
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(SPLUNK_OTEL_AGENT):4317
+            - name: OTEL_SERVICE_NAME
+              value: frontend
+            - name: DEFAULT_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  key: DEMO_LOGIN_USERNAME
+                  name: demo-data-config
+            - name: DEFAULT_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: DEMO_LOGIN_PASSWORD
+                  name: demo-data-config
+            - name: REGISTERED_OAUTH_CLIENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  key: DEMO_OAUTH_CLIENT_ID
+                  name: oauth-config
+                  optional: true
+            - name: ALLOWED_OAUTH_REDIRECT_URI
+              valueFrom:
+                configMapKeyRef:
+                  key: DEMO_OAUTH_REDIRECT_URI
+                  name: oauth-config
+                  optional: true
+          envFrom:
+            - configMapRef:
+                name: environment-config
+            - configMapRef:
+                name: service-api-config
+          image: ghcr.io/splunk/bank-of-splunk/frontend:v1.5.3@sha256:f6f5b0d973c4c7651e1f4d2756282877ed0752225ad166179b0e90993a505312
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 30
+          name: frontend
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 10
+          resources:
+            limits:
+              cpu: 250m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - all
+            privileged: false
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /tmp/.ssh
+              name: publickey
+              readOnly: true
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      serviceAccountName: bank-of-anthos
+      terminationGracePeriodSeconds: 5
+      volumes:
+        - emptyDir: {}
+          name: tmp
+        - name: publickey
+          secret:
+            items:
+              - key: jwtRS256.key.pub
+                path: publickey
+            secretName: jwt-key
+---
+# Load Generators
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    environment: development
+    team: loadgenerator
+    tier: test
+  name: loadgenerator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loadgenerator
+      environment: development
+      team: loadgenerator
+      tier: test
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/rewriteAppHTTPProbers: "true"
+      labels:
+        app: loadgenerator
+        environment: development
+        team: loadgenerator
+        tier: test
+    spec:
+      containers:
+        - env:
+            - name: FRONTEND_ADDR
+              value: frontend:8083
+            - name: USERS
+              value: "5"
+            - name: LOG_LEVEL
+              value: error
+          image: ghcr.io/splunk/bank-of-splunk/loadgenerator:v1.5.3@sha256:d184a7ddd273161327695ed8e69dbefdd3a50eece3123203bc0bf0ef17db6fe4
+          name: loadgenerator
+          resources:
+            limits:
+              cpu: 250m
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - all
+            privileged: false
+            readOnlyRootFilesystem: true
+      restartPolicy: Always
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bankofsplunk-loadgen
+  labels:
+    app: bankofsplunk-loadgen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bankofsplunk-loadgen
+  template:
+    metadata:
+      labels:
+        app: bankofsplunk-loadgen
+    spec:
+      containers:
+        - name: bankofsplunk
+          image: ghcr.io/splunk/online-boutique/rumloadgen:5.6
+          imagePullPolicy: Always
+          env:
+            - name: RUM_FRONTEND_IP
+              valueFrom:
+                secretKeyRef:
+                  name: workshop-secret
+                  key: url
+          resources:
+            limits:
+              cpu: 800m
+              memory: 600Mi
+            requests:
+              cpu: 250m
+              memory: 200Mi
+          volumeMounts:
+            - name: puppeteer
+              subPath: local-file
+              mountPath: /puppeteer/touchwebsite.js
+      volumes:
+        - name: puppeteer
+          configMap:
+            name: scriptfile
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: bankofsplunk-loadgen-hpa
+spec:
+  maxReplicas: 2
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        averageUtilization: 85
+        type: Utilization
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        averageUtilization: 80
+        type: Utilization
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: bankofsplunk-loadgen
