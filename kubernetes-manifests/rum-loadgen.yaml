@@ -1,14 +1,8 @@
 ---
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: loadgen
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: bankofsplunk-loadgen
-  namespace: loadgen
   labels:
     app: bankofsplunk-loadgen
 spec:
@@ -28,17 +22,14 @@ spec:
       #    value: "192.168.1.99"
       containers:
         - name: bankofsplunk
-          image: rcastley895/rumloadgen:5.5
+          image: ghcr.io/splunk/online-boutique/rumloadgen:5.6
           imagePullPolicy: Always
           env:
-            - name: NODE_IP
+            - name: RUM_FRONTEND_IP
               valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-            - name: RUM_PROTOCOL
-              value: "http"
-            - name: RUM_PORT
-              value: "8083"
+                secretKeyRef:
+                  name: workshop-secret
+                  key: url
           resources:
             limits:
               cpu: 800m
@@ -59,9 +50,8 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: bankofsplunk-loadgen-hpa
-  namespace: loadgen
 spec:
-  maxReplicas: 8
+  maxReplicas: 2
   metrics:
   - type: Resource
     resource:
@@ -85,38 +75,43 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: scriptfile
-  namespace: loadgen
 data:
   local-file: |
+    const { Console } = require('console');
     const puppeteer = require('puppeteer');
-
-    function run() {
+    function run () {
         return new Promise(async (resolve, reject) => {
+            const customUserAgent = 'Mozilla/5.0 (X11; Linux x86_64; Splunk RUM_LoadGen) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36';
+            console.log('DEBUG: Using User Agent:', customUserAgent);
+
             const browser = await puppeteer.launch({
                 headless: true,
                 defaultViewport: null,
-                    args: [
-                      '--no-sandbox',
-                      '--disable-setuid-sandbox',
-                      '--disable-dev-shm-usage',
-                      '--disable-session-crashed-bubble',
-                      '--disable-accelerated-2d-canvas',
-                      '--no-first-run',
-                      '--no-zygote',
-                      '--single-process',
-                      '--noerrdialogs',
-                      '--disable-gpu'
-                    ]
+                args: [
+                  '--no-sandbox',
+                  '--disable-setuid-sandbox',
+                  '--disable-gpu',
+                  '--disable-dev-shm-usage',
+                  '--disable-web-security',
+                  '--disable-features=VizDisplayCompositor',
+                  '--max-old-space-size=256',
+                  '--disable-extensions',
+                  '--disable-plugins',
+                  '--disable-background-networking',
+                  '--disable-background-timer-throttling',
+                  '--disable-backgrounding-occluded-windows',
+                  '--disable-renderer-backgrounding',
+                  '--memory-pressure-off',
+                  `--user-agent=${customUserAgent}`
+                ]
             });
-            const url = process.env.RUM_PROTOCOL + "://" + process.env.NODE_IP + ":" + process.env.RUM_PORT + "/";
-            //const url = process.env.RUM_PROTOCOL + "://" + process.env.URL + "/";
+            const url = process.env.RUM_FRONTEND_IP;
+
             try {
                 const wait_time = 500;
                 const timeout = 10000; // Timeout for waiting on actions
                 for (let loop = 0; loop < 1; loop++) {
                     const page = await browser.newPage();
-
-                    await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64; Splunk RUMLoadGen) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36');
 
                     // Interaction 1: Set Viewport
                     console.log("Set Viewport");
