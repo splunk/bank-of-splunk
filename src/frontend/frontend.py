@@ -513,7 +513,7 @@ def create_app():
                                     rum_auth=os.getenv('RUM_AUTH','not-found'),
                                     rum_app_name=os.getenv('RUM_APP_NAME','not-found'),
                                     rum_environment=os.getenv('RUM_ENVIRONMENT','not-found'),
-                               splunk_env=os.getenv('ENV_PLATFORM','a-variant'),
+                                    splunk_env=os.getenv('ENV_PLATFORM','a-variant'),
                                     splunk_version=os.getenv('SPLUNK_VERSION',"0.0.1"),
                                     cluster_name=cluster_name,
                                     cymbal_logo=os.getenv('CYMBAL_LOGO', 'false'),
@@ -787,7 +787,7 @@ def create_app():
             elif platform == 'a-variant':
                  platform_display_name = "A Variant"
             elif platform == 'b-variant':
-                 platform_display_name = "B Variant"     
+                 platform_display_name = "B Variant"
     else:
         app.logger.info("ENV_PLATFORM environment variable is not set")
 

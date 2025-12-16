@@ -62,6 +62,10 @@ spec:
     spec:
       containers:
         - env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: VERSION
               value: v1.5.3
             - name: PORT
@@ -75,13 +79,9 @@ spec:
             - name: BANK_NAME
               value: Bank of Splunk
             - name: ENV_PLATFORM
-              value: a-variant
+              value: $(NAMESPACE)
             - name: SPLUNK_VERSION
               value: "1.90"
-            - name: NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: "deployment.environment=$(NAMESPACE),version=1.90"
             - name: INSTANCE
