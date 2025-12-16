@@ -4,9 +4,7 @@ Deploy Bank of Splunk to two namespaces (`a-variant` and `b-variant`) with Splun
 
 ## Prerequisites
 
-- Kubernetes cluster with kubectl configured
-- Splunk OTel Collector Helm chart installed
-- Access to create namespaces and secrets
+- Kubernetes cluster with kubectl configured. Use the [Terraform scripts](https://github.com/splunk/o11y-field-demos/tree/main/k3d-ec2-instance) to set up a `k3d` cluster if needed.
 
 ## Step 1: Create Namespaces
 
@@ -17,11 +15,18 @@ kubectl create namespace b-variant
 
 ## Step 2: Deploy Splunk OTel Collector with Auto-Instrumentation
 
-The Splunk OTel Collector **must be deployed in the `default` namespace** as the `deployment.yaml` references `default/splunk-otel-collector` for auto-instrumentation annotations.
+- The Splunk OTel Collector **must be deployed in the `default` namespace** as the `deployment.yaml` references `default/splunk-otel-collector` for auto-instrumentation annotations.
+- Export `INDEX` to be either `o11y-demo-us` or `o11y-demo-eu` based on your realm.
 
 ```bash
 helm repo add splunk-otel-collector-chart https://signalfx.github.io/splunk-otel-collector-chart && helm repo update
+```
 
+```bash
+export INDEX="o11y-demo-us" # or "o11y-demo-eu"
+```
+
+```bash
 helm install splunk-otel-collector \
 --set="operatorcrds.install=true", \
 --set="operator.enabled=true", \
@@ -33,7 +38,7 @@ helm install splunk-otel-collector \
 --set="environment=$INSTANCE-workshop" \
 --set="splunkPlatform.endpoint=$HEC_URL" \
 --set="splunkPlatform.token=$HEC_TOKEN" \
---set="splunkPlatform.index=splunk4rookies-workshop" \
+--set="splunkPlatform.index=$INDEX" \
 splunk-otel-collector-chart/splunk-otel-collector \
 -f ~/workshop/k3s/otel-collector.yaml
 ```
