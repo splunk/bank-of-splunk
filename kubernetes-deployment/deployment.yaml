@@ -282,7 +282,14 @@ spec:
         tier: db
     spec:
       containers:
-        - envFrom:
+        - env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
+          envFrom:
             - configMapRef:
                 name: environment-config
             - configMapRef:
@@ -361,7 +368,14 @@ spec:
         tier: db
     spec:
       containers:
-        - envFrom:
+        - env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
+          envFrom:
             - configMapRef:
                 name: environment-config
             - configMapRef:
@@ -461,6 +475,12 @@ spec:
               value: http://$(SPLUNK_OTEL_AGENT):4317
             - name: OTEL_SERVICE_NAME
               value: userservice
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
           envFrom:
             - configMapRef:
                 name: environment-config
@@ -586,6 +606,12 @@ spec:
               value: http://$(SPLUNK_OTEL_AGENT):4317
             - name: OTEL_SERVICE_NAME
               value: contacts
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
           envFrom:
             - configMapRef:
                 name: environment-config
@@ -717,6 +743,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
           envFrom:
             - configMapRef:
                 name: environment-config
@@ -857,6 +885,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
           envFrom:
             - configMapRef:
                 name: environment-config
@@ -1000,6 +1030,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
           envFrom:
             - configMapRef:
                 name: environment-config
@@ -1087,7 +1119,7 @@ spec:
     environment: development
     team: frontend
     tier: web
-  type: LoadBalancer
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -1118,6 +1150,10 @@ spec:
     spec:
       containers:
         - env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: VERSION
               value: v1.5.3
             - name: PORT
@@ -1131,11 +1167,11 @@ spec:
             - name: BANK_NAME
               value: Bank of Splunk
             - name: ENV_PLATFORM
-              value: a-variant
+              value: $(NAMESPACE)
             - name: SPLUNK_VERSION
               value: "1.90"
             - name: OTEL_RESOURCE_ATTRIBUTES
-              value: version=1.90
+              value: "deployment.environment=bank-$(NAMESPACE),version=1.90"
             - name: INSTANCE
               valueFrom:
                 fieldRef:
@@ -1285,6 +1321,12 @@ spec:
               value: "5"
             - name: LOG_LEVEL
               value: error
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
           image: ghcr.io/splunk/bank-of-splunk/loadgenerator:v1.5.3@sha256:d184a7ddd273161327695ed8e69dbefdd3a50eece3123203bc0bf0ef17db6fe4
           name: loadgenerator
           resources:
@@ -1332,10 +1374,13 @@ spec:
           imagePullPolicy: Always
           env:
             - name: RUM_FRONTEND_IP
+              value: "http://frontend:8083"
+            - name: NAMESPACE
               valueFrom:
-                secretKeyRef:
-                  name: workshop-secret
-                  key: url
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
           resources:
             limits:
               cpu: 800m
