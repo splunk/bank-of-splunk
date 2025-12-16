@@ -1,0 +1,65 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: custom-headers
+  namespace: default
+spec:
+  headers:
+    customResponseHeaders:
+      X-Robots-Tag: "noindex, nofollow"
+      Access-Control-Allow-Origin: "*"
+      Access-Control-Allow-Methods: "GET,POST,OPTIONS"
+      Access-Control-Allow-Headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range"
+      Access-Control-Expose-Headers: "Content-Length,Content-Range"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend
+  namespace: a-variant
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    traefik.ingress.kubernetes.io/router.middlewares: default-custom-headers@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - eua-bank.splunko11y.com
+    secretName: eua-bank-tls
+  rules:
+  - host: eua-bank.splunko11y.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 8083
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend
+  namespace: b-variant
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    traefik.ingress.kubernetes.io/router.middlewares: default-custom-headers@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - eub-bank.splunko11y.com
+    secretName: eub-bank-tls
+  rules:
+  - host: eub-bank.splunko11y.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 8083
