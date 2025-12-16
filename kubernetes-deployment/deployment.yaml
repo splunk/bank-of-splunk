@@ -643,7 +643,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    instrumentation.opentelemetry.io/inject-java: "true"
+    instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
   labels:
     application: bank-of-splunk
     environment: development
@@ -667,7 +667,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    instrumentation.opentelemetry.io/inject-java: "true"
+    instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
   labels:
     application: bank-of-splunk
     environment: development
@@ -685,7 +685,7 @@ spec:
   template:
     metadata:
       annotations:
-        instrumentation.opentelemetry.io/inject-java: "true"
+        instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
       labels:
         app: balancereader
         application: bank-of-splunk
@@ -787,7 +787,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    instrumentation.opentelemetry.io/inject-java: "true"
+    instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
   labels:
     application: bank-of-splunk
     environment: development
@@ -811,7 +811,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    instrumentation.opentelemetry.io/inject-java: "true"
+    instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
   labels:
     application: bank-of-splunk
     environment: development
@@ -829,7 +829,7 @@ spec:
   template:
     metadata:
       annotations:
-        instrumentation.opentelemetry.io/inject-java: "true"
+        instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
       labels:
         app: ledgerwriter
         application: bank-of-splunk
@@ -922,7 +922,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    instrumentation.opentelemetry.io/inject-java: "true"
+    instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
   labels:
     application: bank-of-splunk
     environment: development
@@ -946,7 +946,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    instrumentation.opentelemetry.io/inject-java: "true"
+    instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
   labels:
     application: bank-of-splunk
     environment: development
@@ -964,7 +964,7 @@ spec:
   template:
     metadata:
       annotations:
-        instrumentation.opentelemetry.io/inject-java: "true"
+        instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
       labels:
         app: transactionhistory
         application: bank-of-splunk
