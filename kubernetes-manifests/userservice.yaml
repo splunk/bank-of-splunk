@@ -87,7 +87,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: OTEL_RESOURCE_ATTRIBUTES
-              value: "deployment.environment=$(NAMESPACE)"
+              value: "deployment.environment=bank-$(NAMESPACE)"
           envFrom:
             - configMapRef:
                 name: environment-config

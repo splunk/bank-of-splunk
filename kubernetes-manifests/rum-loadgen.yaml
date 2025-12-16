@@ -35,7 +35,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: OTEL_RESOURCE_ATTRIBUTES
-              value: "deployment.environment=$(NAMESPACE)"
+              value: "deployment.environment=bank-$(NAMESPACE)"
           resources:
             limits:
               cpu: 800m
