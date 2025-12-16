@@ -83,7 +83,7 @@ spec:
             - name: SPLUNK_VERSION
               value: "1.90"
             - name: OTEL_RESOURCE_ATTRIBUTES
-              value: "deployment.environment=$(NAMESPACE),version=1.90"
+              value: "deployment.environment=bank-$(NAMESPACE),version=1.90"
             - name: INSTANCE
               valueFrom:
                 fieldRef:
