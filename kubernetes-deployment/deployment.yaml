@@ -1189,15 +1189,9 @@ spec:
                   key: rum_token
                   name: workshop-secret
             - name: RUM_APP_NAME
-              valueFrom:
-                secretKeyRef:
-                  key: app
-                  name: $(NAMESPACE)-app
+              value: $(NAMESPACE)-app
             - name: RUM_ENVIRONMENT
-              valueFrom:
-                secretKeyRef:
-                  key: env
-                  name: bank-$(NAMESPACE)
+              value: bank-$(NAMESPACE)
             - name: SPLUNK_OTEL_AGENT
               valueFrom:
                 fieldRef:
