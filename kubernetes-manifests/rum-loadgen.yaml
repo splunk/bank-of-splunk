@@ -26,10 +26,6 @@ spec:
           imagePullPolicy: Always
           env:
             - name: RUM_FRONTEND_IP
-              # valueFrom:
-              #   secretKeyRef:
-              #     name: workshop-secret
-              #     key: url
               value: "http://frontend:8083"
             - name: NAMESPACE
               valueFrom:

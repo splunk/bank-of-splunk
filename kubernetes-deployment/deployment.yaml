@@ -1192,12 +1192,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: app
-                  name: workshop-secret
+                  name: $(NAMESPACE)-app
             - name: RUM_ENVIRONMENT
               valueFrom:
                 secretKeyRef:
                   key: env
-                  name: workshop-secret
+                  name: bank-$(NAMESPACE)
             - name: SPLUNK_OTEL_AGENT
               valueFrom:
                 fieldRef:
