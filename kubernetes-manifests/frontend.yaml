@@ -78,8 +78,12 @@ spec:
               value: a-variant
             - name: SPLUNK_VERSION
               value: "1.90"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: OTEL_RESOURCE_ATTRIBUTES
-              value: version=1.90
+              value: "deployment.environment=$(NAMESPACE),version=1.90"
             - name: INSTANCE
               valueFrom:
                 fieldRef:
