@@ -337,10 +337,40 @@ def create_app():
         with tracer.start_as_current_span("_shutdown"):
             app.logger.info("Stopping userservice.")
 
-    # Set up logger
-    app.logger.handlers = logging.getLogger('gunicorn.error').handlers
+    # Set up logging programmatically to ensure deployment.environment is available
+    # (logging.conf cannot be used because gunicorn logs before create_app() runs)
+    deployment_env = 'unknown'
+    otel_resource_attrs = os.environ.get('OTEL_RESOURCE_ATTRIBUTES', '')
+    for attr in otel_resource_attrs.split(','):
+        if attr.startswith('deployment.environment='):
+            deployment_env = attr.split('=', 1)[1]
+            break
+
+    log_format = (
+        '{"timestamp": "%(asctime)s", '
+        '"message": "%(funcName)s | %(message)s", '
+        '"filename": "%(filename)s", '
+        '"lineno": %(lineno)d, '
+        '"trace_id": "%(otelTraceID)s", '
+        '"span_id": "%(otelSpanID)s", '
+        '"service.name": "%(otelServiceName)s", '
+        f'"deployment.environment": "{deployment_env}", '
+        '"severity": "%(levelname)s"}'
+    )
+
+    formatter = logging.Formatter(log_format, datefmt='%Y-%m-%d %H:%M:%S')
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+
+    app.logger.handlers = [handler]
     app.logger.setLevel(logging.getLogger('gunicorn.error').level)
-    app.logger.info('Starting userservice. v2.5')
+
+    # Also apply to gunicorn loggers for consistency
+    for logger_name in ['gunicorn.error', 'gunicorn.access']:
+        gunicorn_logger = logging.getLogger(logger_name)
+        gunicorn_logger.handlers = [handler]
+
+    app.logger.info('Starting userservice.')
 
     # Set up tracing and export spans to Cloud Trace.
     if os.environ['ENABLE_TRACING'] == "true" or trace.get_tracer_provider() is not None:

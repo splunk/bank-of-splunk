@@ -26,7 +26,7 @@ RUN apt-get update --yes && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies.
-COPY requirements.txt .
+COPY src/frontend/requirements.txt .
 RUN pip install --prefix="/install" -r requirements.txt
 FROM base
 
@@ -42,12 +42,14 @@ ENV PYTHONUNBUFFERED=0
 ENV LOG_LEVEL=info
 
 # Add application code.
-COPY . .
+COPY src/frontend/ .
 # Ensure files are readable for non-root users
 RUN chmod a+r *
 
-RUN splunk-py-trace-bootstrap
+# Install OpenTelemetry auto-instrumentation packages
+RUN opentelemetry-bootstrap -a install
 
-# Start server using gunicorn
-
-CMD splunk-py-trace gunicorn -b :$PORT --threads 4 --log-config logging.conf --log-level=$LOG_LEVEL "frontend:create_app()"
+# Start server using gunicorn with Splunk OTel auto-instrumentation
+# Note: logging is configured programmatically in frontend.py (not via logging.conf)
+# because deployment_environment must be injected via a filter before the format is used
+CMD opentelemetry-instrument gunicorn -b :$PORT --threads 4 --log-level=$LOG_LEVEL "frontend:create_app()"

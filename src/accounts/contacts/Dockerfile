@@ -52,5 +52,7 @@ RUN chmod a+r *
 
 RUN splunk-py-trace-bootstrap
 
-# Start server using gunicorn
-CMD splunk-py-trace gunicorn -b :$PORT --threads 4 --log-config logging.conf --log-level=$LOG_LEVEL "contacts:create_app()"
+# Start server using gunicorn with Splunk OTel auto-instrumentation
+# Note: logging is configured programmatically in contacts.py (not via logging.conf)
+# because deployment_environment must be injected via a filter before the format is used
+CMD splunk-py-trace gunicorn -b :$PORT --threads 4 --log-level=$LOG_LEVEL "contacts:create_app()"
