@@ -35,17 +35,28 @@ helm install splunk-otel-collector \
 --set="clusterName=$INSTANCE-k3s-cluster" \
 --set="splunkObservability.profilingEnabled=true" \
 --set="agent.service.enabled=true"  \
---set="environment=$INSTANCE-workshop" \
+--set="environment=$INSTANCE" \
 --set="splunkPlatform.endpoint=$HEC_URL" \
 --set="splunkPlatform.token=$HEC_TOKEN" \
 --set="splunkPlatform.index=$INDEX" \
 splunk-otel-collector-chart/splunk-otel-collector \
--f ~/workshop/k3s/otel-collector.yaml
+-f ~/otel-collector.yaml
 ```
 
 ## Step 3: Deploy Workshop Secrets to Each Namespace
 
 Apply the workshop secrets to both namespaces:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: workshop-secret
+type: Opaque
+stringData:
+  realm: eu0
+  rum_token: xxx
+```
 
 ```bash
 kubectl apply -f workshop-secrets.yaml -n a-variant
