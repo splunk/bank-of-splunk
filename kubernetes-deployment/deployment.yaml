@@ -1200,6 +1200,8 @@ spec:
               value: http://$(SPLUNK_OTEL_AGENT):4317
             - name: OTEL_SERVICE_NAME
               value: frontend
+            - name: OTEL_LOGS_EXPORTER
+              value: otlp
             - name: DEFAULT_USERNAME
               valueFrom:
                 configMapKeyRef:
