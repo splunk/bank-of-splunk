@@ -456,7 +456,7 @@ spec:
       containers:
         - env:
             - name: VERSION
-              value: v1.5.3
+              value: v2.0
             - name: PORT
               value: "8080"
             - name: ENABLE_TRACING
@@ -486,7 +486,8 @@ spec:
                 name: environment-config
             - configMapRef:
                 name: accounts-db-config
-          image: ghcr.io/splunk/bank-of-splunk/userservice:v1.5.3@sha256:d6d17105ec1248ebf4af6fb5021aa047ed26fcc6ae4d89c7cd018387a7e27baf
+          #image: ghcr.io/splunk/bank-of-splunk/userservice:v1.5.3@sha256:d6d17105ec1248ebf4af6fb5021aa047ed26fcc6ae4d89c7cd018387a7e27baf
+          image: ghcr.io/splunk/bank-of-splunk/userservice:v2.0
           name: userservice
           ports:
             - containerPort: 8080
@@ -591,7 +592,7 @@ spec:
       containers:
         - env:
             - name: VERSION
-              value: v1.5.3
+              value: v2.0
             - name: PORT
               value: "8080"
             - name: ENABLE_TRACING
@@ -617,7 +618,8 @@ spec:
                 name: environment-config
             - configMapRef:
                 name: accounts-db-config
-          image: ghcr.io/splunk/bank-of-splunk/contacts:v1.5.3@sha256:bfe6d8970e967130c972779b47bef1999afc3d698cc80c56cade5a52dcc0aa64
+          #image: ghcr.io/splunk/bank-of-splunk/contacts:v1.5.3@sha256:bfe6d8970e967130c972779b47bef1999afc3d698cc80c56cade5a52dcc0aa64
+          image: ghcr.io/splunk/bank-of-splunk/contacts:v2.0
           name: contacts
           readinessProbe:
             httpGet:
@@ -1155,7 +1157,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: VERSION
-              value: v1.5.3
+              value: v2.0
             - name: PORT
               value: "8080"
             - name: ENABLE_TRACING
@@ -1200,8 +1202,6 @@ spec:
               value: http://$(SPLUNK_OTEL_AGENT):4317
             - name: OTEL_SERVICE_NAME
               value: frontend
-            - name: OTEL_LOGS_EXPORTER
-              value: otlp
             - name: DEFAULT_USERNAME
               valueFrom:
                 configMapKeyRef:
@@ -1229,7 +1229,8 @@ spec:
                 name: environment-config
             - configMapRef:
                 name: service-api-config
-          image: ghcr.io/splunk/bank-of-splunk/frontend:v1.5.3@sha256:f6f5b0d973c4c7651e1f4d2756282877ed0752225ad166179b0e90993a505312
+          #image: ghcr.io/splunk/bank-of-splunk/frontend:v1.5.3@sha256:f6f5b0d973c4c7651e1f4d2756282877ed0752225ad166179b0e90993a505312
+          image: ghcr.io/splunk/bank-of-splunk/frontend:v2.0
           livenessProbe:
             httpGet:
               path: /ready
