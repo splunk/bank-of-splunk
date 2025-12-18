@@ -455,8 +455,12 @@ spec:
     spec:
       containers:
         - env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: VERSION
-              value: v2.0
+              value: v2.1
             - name: PORT
               value: "8080"
             - name: ENABLE_TRACING
@@ -475,10 +479,6 @@ spec:
               value: http://$(SPLUNK_OTEL_AGENT):4317
             - name: OTEL_SERVICE_NAME
               value: userservice
-            - name: NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: "deployment.environment=bank-$(NAMESPACE)"
           envFrom:
@@ -487,7 +487,8 @@ spec:
             - configMapRef:
                 name: accounts-db-config
           #image: ghcr.io/splunk/bank-of-splunk/userservice:v1.5.3@sha256:d6d17105ec1248ebf4af6fb5021aa047ed26fcc6ae4d89c7cd018387a7e27baf
-          image: ghcr.io/splunk/bank-of-splunk/userservice:v2.0
+          image: ghcr.io/splunk/bank-of-splunk/userservice:v2.1
+          imagePullPolicy: Always
           name: userservice
           ports:
             - containerPort: 8080
@@ -591,8 +592,12 @@ spec:
     spec:
       containers:
         - env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: VERSION
-              value: v2.0
+              value: v2.1
             - name: PORT
               value: "8080"
             - name: ENABLE_TRACING
@@ -607,10 +612,6 @@ spec:
               value: http://$(SPLUNK_OTEL_AGENT):4317
             - name: OTEL_SERVICE_NAME
               value: contacts
-            - name: NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: "deployment.environment=bank-$(NAMESPACE)"
           envFrom:
@@ -619,7 +620,8 @@ spec:
             - configMapRef:
                 name: accounts-db-config
           #image: ghcr.io/splunk/bank-of-splunk/contacts:v1.5.3@sha256:bfe6d8970e967130c972779b47bef1999afc3d698cc80c56cade5a52dcc0aa64
-          image: ghcr.io/splunk/bank-of-splunk/contacts:v2.0
+          image: ghcr.io/splunk/bank-of-splunk/contacts:v2.1
+          imagePullPolicy: Always
           name: contacts
           readinessProbe:
             httpGet:
@@ -1157,7 +1159,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: VERSION
-              value: v2.0
+              value: v2.1
             - name: PORT
               value: "8080"
             - name: ENABLE_TRACING
@@ -1172,8 +1174,6 @@ spec:
               value: $(NAMESPACE)
             - name: SPLUNK_VERSION
               value: "1.90"
-            - name: OTEL_RESOURCE_ATTRIBUTES
-              value: "deployment.environment=bank-$(NAMESPACE),version=1.90"
             - name: INSTANCE
               valueFrom:
                 fieldRef:
@@ -1202,6 +1202,8 @@ spec:
               value: http://$(SPLUNK_OTEL_AGENT):4317
             - name: OTEL_SERVICE_NAME
               value: frontend
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE),version=1.90"
             - name: DEFAULT_USERNAME
               valueFrom:
                 configMapKeyRef:
@@ -1230,7 +1232,8 @@ spec:
             - configMapRef:
                 name: service-api-config
           #image: ghcr.io/splunk/bank-of-splunk/frontend:v1.5.3@sha256:f6f5b0d973c4c7651e1f4d2756282877ed0752225ad166179b0e90993a505312
-          image: ghcr.io/splunk/bank-of-splunk/frontend:v2.0
+          image: ghcr.io/splunk/bank-of-splunk/frontend:v2.1
+          imagePullPolicy: Always
           livenessProbe:
             httpGet:
               path: /ready
