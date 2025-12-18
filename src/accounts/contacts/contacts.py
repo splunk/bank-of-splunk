@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import atexit
+import json
 import logging
 import os
 import re
@@ -202,38 +203,27 @@ def create_app():
         with tracer.start_as_current_span("_shutdown"):
             app.logger.info("Stopping contacts service.")
 
-    # Set up logging programmatically to ensure deployment.environment is available
-    # (logging.conf cannot be used because gunicorn logs before create_app() runs)
-    deployment_env = 'unknown'
-    otel_resource_attrs = os.environ.get('OTEL_RESOURCE_ATTRIBUTES', '')
-    for attr in otel_resource_attrs.split(','):
-        if attr.startswith('deployment.environment='):
-            deployment_env = attr.split('=', 1)[1]
-            break
+    # Set up JSON logging with deployment.environment
+    class JsonFormatter(logging.Formatter):
+        def format(self, record):
+            log_record = {
+                "timestamp": self.formatTime(record, "%Y-%m-%d %H:%M:%S"),
+                "message": f"{record.funcName} | {record.getMessage()}",
+                "filename": record.filename,
+                "lineno": record.lineno,
+                "trace_id": getattr(record, 'otelTraceID', '0'),
+                "span_id": getattr(record, 'otelSpanID', '0'),
+                "service.name": getattr(record, 'otelServiceName', 'contacts'),
+                "deployment.environment": f"bank-{os.environ.get('NAMESPACE', 'unknown')}",
+                "severity": record.levelname
+            }
+            return json.dumps(log_record)
 
-    log_format = (
-        '{"timestamp": "%(asctime)s", '
-        '"message": "%(funcName)s | %(message)s", '
-        '"filename": "%(filename)s", '
-        '"lineno": %(lineno)d, '
-        '"trace_id": "%(otelTraceID)s", '
-        '"span_id": "%(otelSpanID)s", '
-        '"service.name": "%(otelServiceName)s", '
-        f'"deployment.environment": "{deployment_env}", '
-        '"severity": "%(levelname)s"}'
-    )
-
-    formatter = logging.Formatter(log_format, datefmt='%Y-%m-%d %H:%M:%S')
-    handler = logging.StreamHandler()
-    handler.setFormatter(formatter)
-
-    app.logger.handlers = [handler]
-    app.logger.setLevel(logging.getLogger('gunicorn.error').level)
-
-    # Also apply to gunicorn loggers for consistency
-    for logger_name in ['gunicorn.error', 'gunicorn.access']:
-        gunicorn_logger = logging.getLogger(logger_name)
-        gunicorn_logger.handlers = [handler]
+    # Configure root logger
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(JsonFormatter())
+    logging.root.handlers = [handler]
+    logging.root.setLevel(os.environ.get('LOG_LEVEL', 'INFO').upper())
 
     app.logger.info("Starting contacts service.")
 
