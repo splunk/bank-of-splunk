@@ -82,6 +82,12 @@ spec:
               value: http://$(SPLUNK_OTEL_AGENT):4317
             - name: OTEL_SERVICE_NAME
               value: userservice
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
           envFrom:
             - configMapRef:
                 name: environment-config

@@ -282,7 +282,14 @@ spec:
         tier: db
     spec:
       containers:
-        - envFrom:
+        - env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
+          envFrom:
             - configMapRef:
                 name: environment-config
             - configMapRef:
@@ -361,7 +368,14 @@ spec:
         tier: db
     spec:
       containers:
-        - envFrom:
+        - env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
+          envFrom:
             - configMapRef:
                 name: environment-config
             - configMapRef:
@@ -441,8 +455,12 @@ spec:
     spec:
       containers:
         - env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: VERSION
-              value: v1.5.3
+              value: v2.1
             - name: PORT
               value: "8080"
             - name: ENABLE_TRACING
@@ -461,12 +479,16 @@ spec:
               value: http://$(SPLUNK_OTEL_AGENT):4317
             - name: OTEL_SERVICE_NAME
               value: userservice
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
           envFrom:
             - configMapRef:
                 name: environment-config
             - configMapRef:
                 name: accounts-db-config
-          image: ghcr.io/splunk/bank-of-splunk/userservice:v1.5.3@sha256:d6d17105ec1248ebf4af6fb5021aa047ed26fcc6ae4d89c7cd018387a7e27baf
+          #image: ghcr.io/splunk/bank-of-splunk/userservice:v1.5.3@sha256:d6d17105ec1248ebf4af6fb5021aa047ed26fcc6ae4d89c7cd018387a7e27baf
+          image: ghcr.io/splunk/bank-of-splunk/userservice:v2.1
+          imagePullPolicy: Always
           name: userservice
           ports:
             - containerPort: 8080
@@ -570,8 +592,12 @@ spec:
     spec:
       containers:
         - env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: VERSION
-              value: v1.5.3
+              value: v2.1
             - name: PORT
               value: "8080"
             - name: ENABLE_TRACING
@@ -586,12 +612,16 @@ spec:
               value: http://$(SPLUNK_OTEL_AGENT):4317
             - name: OTEL_SERVICE_NAME
               value: contacts
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
           envFrom:
             - configMapRef:
                 name: environment-config
             - configMapRef:
                 name: accounts-db-config
-          image: ghcr.io/splunk/bank-of-splunk/contacts:v1.5.3@sha256:bfe6d8970e967130c972779b47bef1999afc3d698cc80c56cade5a52dcc0aa64
+          #image: ghcr.io/splunk/bank-of-splunk/contacts:v1.5.3@sha256:bfe6d8970e967130c972779b47bef1999afc3d698cc80c56cade5a52dcc0aa64
+          image: ghcr.io/splunk/bank-of-splunk/contacts:v2.1
+          imagePullPolicy: Always
           name: contacts
           readinessProbe:
             httpGet:
@@ -643,7 +673,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    instrumentation.opentelemetry.io/inject-java: "true"
+    instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
   labels:
     application: bank-of-splunk
     environment: development
@@ -667,7 +697,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    instrumentation.opentelemetry.io/inject-java: "true"
+    instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
   labels:
     application: bank-of-splunk
     environment: development
@@ -685,7 +715,7 @@ spec:
   template:
     metadata:
       annotations:
-        instrumentation.opentelemetry.io/inject-java: "true"
+        instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
       labels:
         app: balancereader
         application: bank-of-splunk
@@ -717,6 +747,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
           envFrom:
             - configMapRef:
                 name: environment-config
@@ -742,11 +774,11 @@ spec:
             limits:
               cpu: 500m
               ephemeral-storage: 0.5Gi
-              memory: 512Mi
+              memory: 768Mi
             requests:
               cpu: 100m
               ephemeral-storage: 0.5Gi
-              memory: 256Mi
+              memory: 512Mi
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -787,7 +819,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    instrumentation.opentelemetry.io/inject-java: "true"
+    instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
   labels:
     application: bank-of-splunk
     environment: development
@@ -811,7 +843,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    instrumentation.opentelemetry.io/inject-java: "true"
+    instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
   labels:
     application: bank-of-splunk
     environment: development
@@ -829,7 +861,7 @@ spec:
   template:
     metadata:
       annotations:
-        instrumentation.opentelemetry.io/inject-java: "true"
+        instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
       labels:
         app: ledgerwriter
         application: bank-of-splunk
@@ -857,6 +889,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
           envFrom:
             - configMapRef:
                 name: environment-config
@@ -877,11 +911,11 @@ spec:
             limits:
               cpu: 500m
               ephemeral-storage: 0.5Gi
-              memory: 512Mi
+              memory: 768Mi
             requests:
               cpu: 100m
               ephemeral-storage: 0.5Gi
-              memory: 256Mi
+              memory: 512Mi
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -922,7 +956,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    instrumentation.opentelemetry.io/inject-java: "true"
+    instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
   labels:
     application: bank-of-splunk
     environment: development
@@ -946,7 +980,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    instrumentation.opentelemetry.io/inject-java: "true"
+    instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
   labels:
     application: bank-of-splunk
     environment: development
@@ -964,7 +998,7 @@ spec:
   template:
     metadata:
       annotations:
-        instrumentation.opentelemetry.io/inject-java: "true"
+        instrumentation.opentelemetry.io/inject-java: "default/splunk-otel-collector"
       labels:
         app: transactionhistory
         application: bank-of-splunk
@@ -1000,6 +1034,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
           envFrom:
             - configMapRef:
                 name: environment-config
@@ -1025,11 +1061,11 @@ spec:
             limits:
               cpu: 500m
               ephemeral-storage: 0.5Gi
-              memory: 512Mi
+              memory: 768Mi
             requests:
               cpu: 100m
               ephemeral-storage: 0.5Gi
-              memory: 256Mi
+              memory: 512Mi
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -1087,7 +1123,7 @@ spec:
     environment: development
     team: frontend
     tier: web
-  type: LoadBalancer
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -1118,8 +1154,12 @@ spec:
     spec:
       containers:
         - env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: VERSION
-              value: v1.5.3
+              value: v2.1
             - name: PORT
               value: "8080"
             - name: ENABLE_TRACING
@@ -1131,11 +1171,9 @@ spec:
             - name: BANK_NAME
               value: Bank of Splunk
             - name: ENV_PLATFORM
-              value: a-variant
+              value: $(NAMESPACE)
             - name: SPLUNK_VERSION
               value: "1.90"
-            - name: OTEL_RESOURCE_ATTRIBUTES
-              value: version=1.90
             - name: INSTANCE
               valueFrom:
                 fieldRef:
@@ -1153,15 +1191,9 @@ spec:
                   key: rum_token
                   name: workshop-secret
             - name: RUM_APP_NAME
-              valueFrom:
-                secretKeyRef:
-                  key: app
-                  name: workshop-secret
+              value: $(NAMESPACE)-app
             - name: RUM_ENVIRONMENT
-              valueFrom:
-                secretKeyRef:
-                  key: env
-                  name: workshop-secret
+              value: bank-$(NAMESPACE)
             - name: SPLUNK_OTEL_AGENT
               valueFrom:
                 fieldRef:
@@ -1170,6 +1202,8 @@ spec:
               value: http://$(SPLUNK_OTEL_AGENT):4317
             - name: OTEL_SERVICE_NAME
               value: frontend
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE),version=1.90"
             - name: DEFAULT_USERNAME
               valueFrom:
                 configMapKeyRef:
@@ -1197,7 +1231,9 @@ spec:
                 name: environment-config
             - configMapRef:
                 name: service-api-config
-          image: ghcr.io/splunk/bank-of-splunk/frontend:v1.5.3@sha256:f6f5b0d973c4c7651e1f4d2756282877ed0752225ad166179b0e90993a505312
+          #image: ghcr.io/splunk/bank-of-splunk/frontend:v1.5.3@sha256:f6f5b0d973c4c7651e1f4d2756282877ed0752225ad166179b0e90993a505312
+          image: ghcr.io/splunk/bank-of-splunk/frontend:v2.1
+          imagePullPolicy: Always
           livenessProbe:
             httpGet:
               path: /ready
@@ -1285,6 +1321,12 @@ spec:
               value: "5"
             - name: LOG_LEVEL
               value: error
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
           image: ghcr.io/splunk/bank-of-splunk/loadgenerator:v1.5.3@sha256:d184a7ddd273161327695ed8e69dbefdd3a50eece3123203bc0bf0ef17db6fe4
           name: loadgenerator
           resources:
@@ -1332,10 +1374,13 @@ spec:
           imagePullPolicy: Always
           env:
             - name: RUM_FRONTEND_IP
+              value: "http://frontend:8083"
+            - name: NAMESPACE
               valueFrom:
-                secretKeyRef:
-                  name: workshop-secret
-                  key: url
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
           resources:
             limits:
               cpu: 800m

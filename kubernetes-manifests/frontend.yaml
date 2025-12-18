@@ -31,7 +31,7 @@ spec:
     environment: development
     team: frontend
     tier: web
-  type: LoadBalancer
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -62,6 +62,10 @@ spec:
     spec:
       containers:
         - env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: VERSION
               value: v1.5.3
             - name: PORT
@@ -75,11 +79,11 @@ spec:
             - name: BANK_NAME
               value: Bank of Splunk
             - name: ENV_PLATFORM
-              value: a-variant
+              value: $(NAMESPACE)
             - name: SPLUNK_VERSION
               value: "1.90"
             - name: OTEL_RESOURCE_ATTRIBUTES
-              value: version=1.90
+              value: "deployment.environment=bank-$(NAMESPACE),version=1.90"
             - name: INSTANCE
               valueFrom:
                 fieldRef:
@@ -97,15 +101,9 @@ spec:
                   key: rum_token
                   name: workshop-secret
             - name: RUM_APP_NAME
-              valueFrom:
-                secretKeyRef:
-                  key: app
-                  name: workshop-secret
+              value: $(NAMESPACE)-app
             - name: RUM_ENVIRONMENT
-              valueFrom:
-                secretKeyRef:
-                  key: env
-                  name: workshop-secret
+              value: bank-$(NAMESPACE)
             - name: SPLUNK_OTEL_AGENT
               valueFrom:
                 fieldRef:

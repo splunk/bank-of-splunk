@@ -26,10 +26,13 @@ spec:
           imagePullPolicy: Always
           env:
             - name: RUM_FRONTEND_IP
+              value: "http://frontend:8083"
+            - name: NAMESPACE
               valueFrom:
-                secretKeyRef:
-                  name: workshop-secret
-                  key: url
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "deployment.environment=bank-$(NAMESPACE)"
           resources:
             limits:
               cpu: 800m
