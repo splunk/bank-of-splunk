@@ -2,6 +2,7 @@
 
 # Usage:
 #   ./build-frontend.sh <version> [-cc]
+#   Tag format: v<version> (e.g., 2.0 becomes v2.0)
 
 if [ -z "$1" ]; then
   echo "Error: No version provided."
@@ -17,8 +18,8 @@ if [[ "$2" == "-cc" ]]; then
   CACHE_OPTION="--no-cache"
 fi
 
-# Move two directories up from src/frontend
-cd "$(dirname "$0")/../.."
+# Move to the frontend directory
+cd "$(dirname "$0")"
 
 echo "Building frontend service version: $VERSION"
 echo "Build options: ${CACHE_OPTION:-default caching enabled}"
@@ -31,7 +32,7 @@ DOCKER_CMD=(
   --build-arg VERSION="$VERSION"
   -t ghcr.io/splunk/bank-of-splunk/frontend:"$VERSION"
   --load
-  -f src/frontend/Dockerfile
+  -f Dockerfile
   .
 )
 
