@@ -33,6 +33,8 @@
 
     <properties>
         <java.version>17</java.version>
+        <!-- Override Spring Boot 3.3.4 managed Tomcat (10.1.30) for CVE-2026-43512 -->
+        <tomcat.version>10.1.55</tomcat.version>
         <bootstrap.version>4.2.1</bootstrap.version>
         <checkstyle.config.location>./checkstyle.xml</checkstyle.config.location>
         <spring-cloud.version>2022.0.5</spring-cloud.version>
