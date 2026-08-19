@@ -168,7 +168,7 @@ typing-extensions==4.10.0
     # via
     #   opentelemetry-resourcedetector-gcp
     #   opentelemetry-sdk
-urllib3==2.2.1
+urllib3==2.7.0
     # via
     #   -r requirements.in
     #   requests
