@@ -28,13 +28,13 @@ chardet==5.2.0
     # via -r requirements.in
 charset-normalizer==3.3.2
     # via requests
-click==8.1.7
+click==8.3.3
     # via
     #   -r requirements.in
     #   flask
 coverage[toml]==7.6.1
     # via pytest-cov
-cryptography==43.0.1
+cryptography==46.0.7
     # via -r requirements.in
 deprecated==1.2.14
     # via
@@ -71,7 +71,7 @@ grpcio==1.66.1
     #   grpcio-status
 grpcio-status==1.62.3
     # via google-api-core
-waitress==3.0.0
+waitress==3.0.1
     # via -r requirements.in
 idna==3.10
     # via
@@ -160,7 +160,7 @@ psycopg2-binary==2.9.9
     # via -r requirements.in
 py==1.11.0
     # via -r requirements.in
-pyasn1==0.6.1
+pyasn1==0.6.3
     # via
     #   -r requirements.in
     #   pyasn1-modules
@@ -175,7 +175,7 @@ pycparser==2.22
     #   cffi
 pycryptodome==3.20.0
     # via -r requirements.in
-pyjwt==2.9.0
+pyjwt==2.13.0
     # via -r requirements.in
 pyparsing==3.1.4
     # via -r requirements.in
@@ -204,7 +204,7 @@ typing-extensions==4.12.2
     # via
     #   opentelemetry-resourcedetector-gcp
     #   opentelemetry-sdk
-urllib3==2.2.3
+urllib3==2.7.0
     # via
     #   -r requirements.in
     #   requests
