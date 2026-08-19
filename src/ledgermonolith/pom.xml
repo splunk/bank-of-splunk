@@ -42,6 +42,16 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- CVE-2026-40984: pin Micrometer to 1.15.12 (Spring Boot 3.3.4
+                 manages 1.13.4; the 1.13 line has no fix). Declared first so
+                 this import wins over the spring-cloud-gcp / Spring Boot BOMs. -->
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-bom</artifactId>
+                <version>1.15.12</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>spring-cloud-gcp-dependencies</artifactId>
