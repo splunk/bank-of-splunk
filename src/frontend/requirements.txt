@@ -16,7 +16,7 @@ charset-normalizer==3.3.2
     # via requests
 click==8.3.3
     # via flask
-cryptography==46.0.7
+cryptography==50.0.0
     # via
     #   -r requirements.in
     #   splunk-opentelemetry
